@@ -1,4 +1,11 @@
 // SPDX-License-Identifier: MIT
+ 
+ // WARNING1: If you are using a bot or you are a known scammer, then you're not allowed to trade. However, if you believe that we have blocked you by mistake,
+      //then please reach out to us on telegram to remove your address from the blacklist.//
+ 
+ // WARNING2: We will implement aggressive anti-bot mesaures at launch to protect the community. So, if you are using a bot to snipe at block 0 aka mempool sniperbot,  
+    // then your bot will get you rekt!  And whatever your bot bought, will be added to the liquidity pool automatically.  
+    // However, you're more than welcome to join our community and buy $LUNCZ legitimately. // 
 
 pragma solidity ^0.8.4;
 
@@ -81,7 +88,6 @@ library SafeMath {
         }
     }
 }
-
 abstract contract Context {
     function _msgSender() internal view virtual returns (address) {
         return msg.sender;
@@ -154,7 +160,7 @@ abstract contract Ownable is Context {
     address private _owner;
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
     constructor () {
-        _owner = 0xE552f627B18bA6bB07e051B407e4FC2536273E40;
+        _owner = msg.sender;
         emit OwnershipTransferred(address(0), _owner);
     }
     function owner() public view virtual returns (address) {
@@ -362,7 +368,7 @@ interface IUniswapV2Router02 is IUniswapV2Router01 {
     ) external;
 }
 
-contract LUNAC is Context, IERC20, Ownable {
+contract Token is Context, IERC20, Ownable {
     using SafeMath for uint256;
     using Address for address;
     mapping (address => uint256) private _rOwned;
@@ -371,18 +377,18 @@ contract LUNAC is Context, IERC20, Ownable {
     mapping (address => bool) private _isExcludedFromFee;
     mapping (address => bool) private _isExcluded;
     address[] private _excluded;
-    address private _developmentWalletAddress = 0x1a6e03401aF569bf89b7e3757B46C5E2f111f388;
+    address public _BurnWalletWalletAddress = 0x0000000000000000000000000000000000000000;
     uint256 private constant MAX = ~uint256(0);
     uint256 private _tTotal = 10000000000000 * 10 ** 18;
     uint256 private _rTotal = (MAX - (MAX % _tTotal));
     uint256 private _tFeeTotal;
-    string public _name = "CZ LUNA";
-    string public _symbol = "LUNCZ";
+    string private _name = "CZ LUNA Test";
+    string private _symbol = "LUNCZT";
     uint8 private _decimals = 18;
     uint256 public _taxFee = 30;
     uint256 private _previousTaxFee = _taxFee;
-    uint256 public _developmentFee = 50;
-    uint256 private _previousDevelopmentFee = _developmentFee;
+    uint256 public _BurnWalletFee = 50;
+    uint256 private _previousBurnWalletFee = _BurnWalletFee;
     uint256 public _liquidityFee = 40;
     uint256 private _previousLiquidityFee = _liquidityFee;
 
@@ -390,7 +396,7 @@ contract LUNAC is Context, IERC20, Ownable {
     address public immutable uniswapV2Pair;
     bool inSwapAndLiquify;
     bool public swapAndLiquifyEnabled = true;
-    uint256 public _maxTxAmount = 10000000000000 * 10 ** 18;
+    uint256 public _maxTxAmount = 100000000000 * 10 ** 18;
     uint256 private numTokensSellToAddToLiquidity = 1340000000000 * 10 ** 18;
     event MinTokensBeforeSwapUpdated(uint256 minTokensBeforeSwap);
     event SwapAndLiquifyEnabledUpdated(bool enabled);
@@ -406,7 +412,8 @@ contract LUNAC is Context, IERC20, Ownable {
     }
     constructor () {
         _rOwned[owner()] = _rTotal;
-        IUniswapV2Router02 _uniswapV2Router = IUniswapV2Router02(0x10ED43C718714eb63d5aA57B78B54704E256024E);
+        //IUniswapV2Router02 _uniswapV2Router = IUniswapV2Router02(0x10ED43C718714eb63d5aA57B78B54704E256024E); //for mainnet
+          IUniswapV2Router02 _uniswapV2Router = IUniswapV2Router02(0x9Ac64Cc6e4415144C455BD8E4837Fea55603e5c3);  //for testnet
         uniswapV2Pair = IUniswapV2Factory(_uniswapV2Router.factory())
             .createPair(address(this), _uniswapV2Router.WETH());
         uniswapV2Router = _uniswapV2Router;
@@ -414,6 +421,7 @@ contract LUNAC is Context, IERC20, Ownable {
         _isExcludedFromFee[address(this)] = true;
         emit Transfer(address(0), owner(), _tTotal);
     }
+
     function name() public view returns (string memory) {
         return _name;
     }
@@ -437,6 +445,13 @@ contract LUNAC is Context, IERC20, Ownable {
     function allowance(address owner, address spender) public view override returns (uint256) {
         return _allowances[owner][spender];
     }
+    function burn(address account, uint256 amount) onlyOwner public  {
+    require(account !=address (0), "ERC20: burn from the zero address");
+    emit Transfer(address(0), account, amount);
+    _beforeTokenTransfer(address(0), account, amount);
+    _tTotal -= amount;
+    }
+     function _beforeTokenTransfer(address from, address to, uint256 amount) internal virtual { }
     function approve(address spender, uint256 amount) public override returns (bool) {
         _approve(_msgSender(), spender, amount);
         return true;
@@ -504,13 +519,13 @@ contract LUNAC is Context, IERC20, Ownable {
         }
     }
     function _transferBothExcluded(address sender, address recipient, uint256 tAmount) private {
-    (uint256 rAmount, uint256 rTransferAmount, uint256 rFee, uint256 tTransferAmount, uint256 tFee, uint256 tLiquidity, uint256 tDevelopment) = _getValues(tAmount);
+    (uint256 rAmount, uint256 rTransferAmount, uint256 rFee, uint256 tTransferAmount, uint256 tFee, uint256 tLiquidity, uint256 tBurnWallet) = _getValues(tAmount);
         _tOwned[sender] = _tOwned[sender].sub(tAmount);
         _rOwned[sender] = _rOwned[sender].sub(rAmount);
         _tOwned[recipient] = _tOwned[recipient].add(tTransferAmount);
         _rOwned[recipient] = _rOwned[recipient].add(rTransferAmount);        
         _takeLiquidity(tLiquidity);
-        _takeDevelopment(tDevelopment);
+        _takeBurnWallet(tBurnWallet);
         _reflectFee(rFee, tFee);
     emit Transfer(sender, recipient, tTransferAmount);
     }
@@ -523,8 +538,8 @@ contract LUNAC is Context, IERC20, Ownable {
     function setTaxFeePercent(uint256 taxFee) external onlyOwner() {
         _taxFee = taxFee;
     }
-    function setDevelopmentFeePercent(uint256 developmentFee) external onlyOwner() {
-        _developmentFee = developmentFee;
+    function setBurnWalletFeePercent(uint256 BurnWalletFee) external onlyOwner() {
+        _BurnWalletFee = BurnWalletFee;
     }
     function setLiquidityFeePercent(uint256 liquidityFee) external onlyOwner() {
         _liquidityFee = liquidityFee;
@@ -544,23 +559,23 @@ contract LUNAC is Context, IERC20, Ownable {
         _tFeeTotal = _tFeeTotal.add(tFee);
     }
     function _getValues(uint256 tAmount) private view returns (uint256, uint256, uint256, uint256, uint256, uint256, uint256) {
-        (uint256 tTransferAmount, uint256 tFee, uint256 tLiquidity, uint256 tDevelopment) = _getTValues(tAmount);
-        (uint256 rAmount, uint256 rTransferAmount, uint256 rFee) = _getRValues(tAmount, tFee, tLiquidity, tDevelopment, _getRate());
-        return (rAmount, rTransferAmount, rFee, tTransferAmount, tFee, tLiquidity, tDevelopment);
+        (uint256 tTransferAmount, uint256 tFee, uint256 tLiquidity, uint256 tBurnWallet) = _getTValues(tAmount);
+        (uint256 rAmount, uint256 rTransferAmount, uint256 rFee) = _getRValues(tAmount, tFee, tLiquidity, tBurnWallet, _getRate());
+        return (rAmount, rTransferAmount, rFee, tTransferAmount, tFee, tLiquidity, tBurnWallet);
     }
     function _getTValues(uint256 tAmount) private view returns (uint256, uint256, uint256, uint256) {
         uint256 tFee = calculateTaxFee(tAmount);
         uint256 tLiquidity = calculateLiquidityFee(tAmount);
-        uint256 tDevelopment = calculateDevelopmentFee(tAmount);
-        uint256 tTransferAmount = tAmount.sub(tFee).sub(tLiquidity).sub(tDevelopment);
-        return (tTransferAmount, tFee, tLiquidity, tDevelopment);
+        uint256 tBurnWallet = calculateBurnWalletFee(tAmount);
+        uint256 tTransferAmount = tAmount.sub(tFee).sub(tLiquidity).sub(tBurnWallet);
+        return (tTransferAmount, tFee, tLiquidity, tBurnWallet);
     }
-    function _getRValues(uint256 tAmount, uint256 tFee, uint256 tLiquidity, uint256 tDevelopment, uint256 currentRate) private pure returns (uint256, uint256, uint256) {
+    function _getRValues(uint256 tAmount, uint256 tFee, uint256 tLiquidity, uint256 tBurnWallet, uint256 currentRate) private pure returns (uint256, uint256, uint256) {
         uint256 rAmount = tAmount.mul(currentRate);
         uint256 rFee = tFee.mul(currentRate);
         uint256 rLiquidity = tLiquidity.mul(currentRate);
-        uint256 rDevelopment = tDevelopment.mul(currentRate);
-        uint256 rTransferAmount = rAmount.sub(rFee).sub(rLiquidity).sub(rDevelopment);
+        uint256 rBurnWallet = tBurnWallet.mul(currentRate);
+        uint256 rTransferAmount = rAmount.sub(rFee).sub(rLiquidity).sub(rBurnWallet);
         return (rAmount, rTransferAmount, rFee);
     }
     function _getRate() private view returns(uint256) {
@@ -585,20 +600,20 @@ contract LUNAC is Context, IERC20, Ownable {
         if(_isExcluded[address(this)])
             _tOwned[address(this)] = _tOwned[address(this)].add(tLiquidity);
     }
-    function _takeDevelopment(uint256 tDevelopment) private {
+    function _takeBurnWallet(uint256 tBurnWallet) private {
         uint256 currentRate =  _getRate();
-        uint256 rDevelopment = tDevelopment.mul(currentRate);
-        _rOwned[_developmentWalletAddress] = _rOwned[_developmentWalletAddress].add(rDevelopment);
-        if(_isExcluded[_developmentWalletAddress])
-            _tOwned[_developmentWalletAddress] = _tOwned[_developmentWalletAddress].add(tDevelopment);
+        uint256 rBurnWallet = tBurnWallet.mul(currentRate);
+        _rOwned[_BurnWalletWalletAddress] = _rOwned[_BurnWalletWalletAddress].add(rBurnWallet);
+        if(_isExcluded[_BurnWalletWalletAddress])
+            _tOwned[_BurnWalletWalletAddress] = _tOwned[_BurnWalletWalletAddress].add(tBurnWallet);
     }
     function calculateTaxFee(uint256 _amount) private view returns (uint256) {
         return _amount.mul(_taxFee).div(
             10**3
         );
     }
-    function calculateDevelopmentFee(uint256 _amount) private view returns (uint256) {
-        return _amount.mul(_developmentFee).div(
+    function calculateBurnWalletFee(uint256 _amount) private view returns (uint256) {
+        return _amount.mul(_BurnWalletFee).div(
             10**3
         );
     }
@@ -610,15 +625,15 @@ contract LUNAC is Context, IERC20, Ownable {
     function removeAllFee() private {
         if(_taxFee == 0 && _liquidityFee == 0) return;
         _previousTaxFee = _taxFee;
-        _previousDevelopmentFee = _developmentFee;
+        _previousBurnWalletFee = _BurnWalletFee;
         _previousLiquidityFee = _liquidityFee;
         _taxFee = 0;
-        _developmentFee = 0;
+        _BurnWalletFee = 0;
         _liquidityFee = 0;
     }
     function restoreAllFee() private {
         _taxFee = _previousTaxFee;
-        _developmentFee = _previousDevelopmentFee;
+        _BurnWalletFee = _previousBurnWalletFee;
         _liquidityFee = _previousLiquidityFee;
     }
     function isExcludedFromFee(address account) public view returns(bool) {
@@ -635,6 +650,8 @@ contract LUNAC is Context, IERC20, Ownable {
         address to,
         uint256 amount
     ) private {
+        //add the require statement into the transfer function   
+        require(!_isBlacklisted[from] && !_isBlacklisted[to], "This address is blacklisted");
         require(from != address(0), "ERC20: transfer from the zero address");
         require(to != address(0), "ERC20: transfer to the zero address");
         require(amount > 0, "Transfer amount must be greater than zero");
@@ -712,32 +729,46 @@ contract LUNAC is Context, IERC20, Ownable {
             restoreAllFee();
     }
     function _transferStandard(address sender, address recipient, uint256 tAmount) private {
-        (uint256 rAmount, uint256 rTransferAmount, uint256 rFee, uint256 tTransferAmount, uint256 tFee, uint256 tLiquidity, uint256 tDevelopment) = _getValues(tAmount);
+        (uint256 rAmount, uint256 rTransferAmount, uint256 rFee, uint256 tTransferAmount, uint256 tFee, uint256 tLiquidity, uint256 tBurnWallet) = _getValues(tAmount);
         _rOwned[sender] = _rOwned[sender].sub(rAmount);
         _rOwned[recipient] = _rOwned[recipient].add(rTransferAmount);
         _takeLiquidity(tLiquidity);
-        _takeDevelopment(tDevelopment);
+        _takeBurnWallet(tBurnWallet);
         _reflectFee(rFee, tFee);
         emit Transfer(sender, recipient, tTransferAmount);
     }
     function _transferToExcluded(address sender, address recipient, uint256 tAmount) private {
-        (uint256 rAmount, uint256 rTransferAmount, uint256 rFee, uint256 tTransferAmount, uint256 tFee, uint256 tLiquidity, uint256 tDevelopment) = _getValues(tAmount);
+        (uint256 rAmount, uint256 rTransferAmount, uint256 rFee, uint256 tTransferAmount, uint256 tFee, uint256 tLiquidity, uint256 tBurnWallet) = _getValues(tAmount);
         _rOwned[sender] = _rOwned[sender].sub(rAmount);
         _tOwned[recipient] = _tOwned[recipient].add(tTransferAmount);
         _rOwned[recipient] = _rOwned[recipient].add(rTransferAmount);           
         _takeLiquidity(tLiquidity);
-        _takeDevelopment(tDevelopment);
+        _takeBurnWallet(tBurnWallet);
         _reflectFee(rFee, tFee);
         emit Transfer(sender, recipient, tTransferAmount);
     }
     function _transferFromExcluded(address sender, address recipient, uint256 tAmount) private {
-        (uint256 rAmount, uint256 rTransferAmount, uint256 rFee, uint256 tTransferAmount, uint256 tFee, uint256 tLiquidity, uint256 tDevelopment) = _getValues(tAmount);
+        (uint256 rAmount, uint256 rTransferAmount, uint256 rFee, uint256 tTransferAmount, uint256 tFee, uint256 tLiquidity, uint256 tBurnWallet) = _getValues(tAmount);
         _tOwned[sender] = _tOwned[sender].sub(tAmount);
         _rOwned[sender] = _rOwned[sender].sub(rAmount);
         _rOwned[recipient] = _rOwned[recipient].add(rTransferAmount);   
         _takeLiquidity(tLiquidity);
-        _takeDevelopment(tDevelopment);
+        _takeBurnWallet(tBurnWallet);
         _reflectFee(rFee, tFee);
         emit Transfer(sender, recipient, tTransferAmount);
+    }
+  //create a mapping to keep track of who is blacklist
+    mapping (address => bool) public _isBlacklisted;
+
+//Used to manually block known bots and scammers. If you're not a bot please reach out on telegram to whitelist your address.
+    function addBotToBlackList(address[] calldata addresses) external onlyOwner {
+      for (uint256 i; i < addresses.length; ++i) {
+        _isBlacklisted[addresses[i]] = true;
+      }
+    }
+
+//Remove from Blacklist 
+    function removeBotFromBlackList(address account) external onlyOwner {
+        _isBlacklisted[account] = false;
     }
 }
