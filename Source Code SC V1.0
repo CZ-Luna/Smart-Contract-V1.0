@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
  
- // WARNING1: If you are using a bot or you are a known scammer, then you're not allowed to trade. However, if you believe that we have blocked you by mistake,
+// WARNING1: If you are using a bot or you are a known scammer, then you're not allowed to trade. However, if you believe that we have blocked you by mistake,
       //then please reach out to us on telegram to remove your address from the blacklist.//
  
- // WARNING2: We will implement aggressive anti-bot mesaures at launch to protect the community. So, if you are using a bot to snipe at block 0 aka mempool sniperbot,  
+// WARNING2: We will implement aggressive anti-bot measures at launch to protect the community. So, if you are using a bot to snipe at Block 0 aka Mempool Sniperbot,  
     // then your bot will get you rekt!  And whatever your bot bought, will be added to the liquidity pool automatically.  
-    // However, you're more than welcome to join our community and buy $LUNCZ legitimately. // 
+    // However, you're more than welcome to join our ever growing community and acquire $LUNCZ legitimately. // 
 
 pragma solidity ^0.8.4;
 
@@ -382,8 +382,8 @@ contract Token is Context, IERC20, Ownable {
     uint256 private _tTotal = 10000000000000 * 10 ** 18;
     uint256 private _rTotal = (MAX - (MAX % _tTotal));
     uint256 private _tFeeTotal;
-    string private _name = "CZ LUNA Test";
-    string private _symbol = "LUNCZT";
+    string private _name = "CZ Test3";
+    string private _symbol = "CZT3";
     uint8 private _decimals = 18;
     uint256 public _taxFee = 30;
     uint256 private _previousTaxFee = _taxFee;
@@ -396,7 +396,7 @@ contract Token is Context, IERC20, Ownable {
     address public immutable uniswapV2Pair;
     bool inSwapAndLiquify;
     bool public swapAndLiquifyEnabled = true;
-    uint256 public _maxTxAmount = 100000000000 * 10 ** 18;
+    uint256 public _maxTxAmount = 200000000000 * 10 ** 18;
     uint256 private numTokensSellToAddToLiquidity = 1340000000000 * 10 ** 18;
     event MinTokensBeforeSwapUpdated(uint256 minTokensBeforeSwap);
     event SwapAndLiquifyEnabledUpdated(bool enabled);
@@ -444,12 +444,6 @@ contract Token is Context, IERC20, Ownable {
     }
     function allowance(address owner, address spender) public view override returns (uint256) {
         return _allowances[owner][spender];
-    }
-    function burn(address account, uint256 amount) onlyOwner public  {
-    require(account !=address (0), "ERC20: burn from the zero address");
-    emit Transfer(address(0), account, amount);
-    _beforeTokenTransfer(address(0), account, amount);
-    _tTotal -= amount;
     }
      function _beforeTokenTransfer(address from, address to, uint256 amount) internal virtual { }
     function approve(address spender, uint256 amount) public override returns (bool) {
@@ -544,7 +538,7 @@ contract Token is Context, IERC20, Ownable {
     function setLiquidityFeePercent(uint256 liquidityFee) external onlyOwner() {
         _liquidityFee = liquidityFee;
     }
-    function setMaxTxPercent(uint256 maxTxPercent) external onlyOwner() {
+    function setMaxTxPercent(uint256 maxTxPercent) private {   // CHANGED THIS ONE HERE//
         _maxTxAmount = _tTotal.mul(maxTxPercent).div(
             10**3
         );
@@ -757,7 +751,7 @@ contract Token is Context, IERC20, Ownable {
         _reflectFee(rFee, tFee);
         emit Transfer(sender, recipient, tTransferAmount);
     }
-  //create a mapping to keep track of who is blacklist
+  //Mapping to keep track of who is blacklist
     mapping (address => bool) public _isBlacklisted;
 
 //Used to manually block known bots and scammers. If you're not a bot please reach out on telegram to whitelist your address.
@@ -767,7 +761,7 @@ contract Token is Context, IERC20, Ownable {
       }
     }
 
-//Remove from Blacklist 
+//Remove Bot from Blacklist 
     function removeBotFromBlackList(address account) external onlyOwner {
         _isBlacklisted[account] = false;
     }
